@@ -1,0 +1,12 @@
+:{$PORT} {
+	root * /srv
+	encode gzip zstd
+	file_server
+
+	# Long cache for static assets, short for the HTML so edits show up fast
+	@assets {
+		path /assets/* /styles.css /app.js
+	}
+	header @assets Cache-Control "public, max-age=604800, immutable"
+	header /index.html Cache-Control "public, max-age=300"
+}

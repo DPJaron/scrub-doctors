@@ -682,9 +682,25 @@ section { position: relative; }
 .google-badge small { color: #5a6c72; font-size: .76rem; }
 
 .rev-viewport { margin-top: 50px; overflow: hidden; }
+.rev-marquee {
+  margin-top: 50px;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+.rev-mtrack {
+  display: flex;
+  width: max-content;
+  align-items: stretch;
+  animation: revScroll 42s linear infinite;
+}
+.rev-mtrack:hover { animation-play-state: paused; }
+@keyframes revScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.rev-mtrack .rev-card { flex: 0 0 360px; margin-right: 24px; }
+@media (max-width: 600px){ .rev-mtrack { animation-duration: 26s; } .rev-mtrack .rev-card { flex-basis: 304px; } }
 .rev-track {
   display: flex;
-  transition: transform .7s var(--ease);
+  transition: transform .5s var(--ease);
   will-change: transform;
 }
 .rev-card {
@@ -805,6 +821,7 @@ section { position: relative; }
 
 .qform {
   background: #fff; color: var(--ink);
+  scroll-margin-top: 100px;
   border-radius: var(--r-xl);
   padding: clamp(26px, 3.4vw, 42px);
   box-shadow: var(--shadow-lg);
@@ -832,6 +849,34 @@ select.inp { appearance: none; background-image: url("data:image/svg+xml,%3Csvg 
 .win-stepper input { width: 70px; text-align: center; border: none; background: transparent; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; -moz-appearance: textfield; }
 .win-stepper input::-webkit-outer-spin-button, .win-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; }
 .qform .btn { margin-top: 8px; }
+.svc-checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.svc-check {
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 14px; min-height: 50px;
+  border: 1.5px solid var(--line); border-radius: 13px;
+  background: var(--paper); cursor: pointer;
+  font-size: .92rem; font-weight: 500; color: var(--ink-2);
+  transition: border-color .25s, background .25s;
+  user-select: none;
+}
+.svc-check:hover { border-color: var(--deep); }
+.svc-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.svc-check .box {
+  width: 22px; height: 22px; border-radius: 7px; flex: none;
+  border: 2px solid #c2d2d8; background: #fff;
+  display: grid; place-items: center; color: #fff;
+  transition: background .2s, border-color .2s;
+}
+.svc-check .box svg { width: 14px; height: 14px; opacity: 0; transform: scale(.5); transition: opacity .2s, transform .2s; }
+.svc-check.on { border-color: var(--deep); background: var(--sky-tint); color: var(--ink); font-weight: 600; }
+.svc-check.on .box { background: var(--deep); border-color: var(--deep); }
+.svc-check.on .box svg { opacity: 1; transform: scale(1); }
+.svc-check:has(input:checked) { border-color: var(--deep); background: var(--sky-tint); color: var(--ink); font-weight: 600; }
+.svc-check:has(input:checked) .box { background: var(--deep); border-color: var(--deep); }
+.svc-check:has(input:checked) .box svg { opacity: 1; transform: scale(1); }
+.svc-check input:focus-visible + .box { box-shadow: 0 0 0 3px rgba(88,198,230,.4); }
+@media (max-width: 600px){ .svc-checks { grid-template-columns: 1fr; } }
 .form-foot { text-align: center; font-size: .82rem; color: #6a7c82; margin-top: 14px; }
 .qform-success {
   display: none;

@@ -92,9 +92,9 @@
   let currentKey = "";
 
   const POSES = {
-    point: "assets/doc-wink.png",
-    walk: "assets/doc-walk.png",
-    hero: "assets/doc-hero.png",
+    point: "img/doc-wink.png",
+    walk: "img/doc-walk.png",
+    hero: "img/doc-hero.png",
   };
 
   // narration per section
@@ -253,7 +253,7 @@
     if (nextBtn) nextBtn.addEventListener("click", () => { next(); restartAuto(); });
     if (prevBtn) prevBtn.addEventListener("click", () => { prev(); restartAuto(); });
 
-    const startAuto = () => { autoTimer = setInterval(next, 5200); };
+    const startAuto = () => { autoTimer = setInterval(next, 3500); };
     const restartAuto = () => { clearInterval(autoTimer); startAuto(); };
 
     const viewport = document.querySelector(".rev-viewport");
@@ -262,22 +262,47 @@
       viewport.addEventListener("mouseleave", startAuto);
     }
 
-    // drag / swipe
-    let down = false, startX = 0, moved = 0;
-    const pointerDown = (x) => { down = true; startX = x; moved = 0; clearInterval(autoTimer); };
-    const pointerMove = (x) => { if (down) moved = x - startX; };
-    const pointerUp = () => {
+    // drag / swipe with live finger-follow + axis lock (smooth on mobile)
+    let down = false, sX = 0, sY = 0, dragging = false, decided = false, baseT = 0;
+    const stepPx = () => {
+      const card = cards[0];
+      const gap = parseFloat(getComputedStyle(card).marginRight) || 0;
+      return card.offsetWidth + gap;
+    };
+    const onDown = (x, y) => {
+      down = true; sX = x; sY = y; dragging = false; decided = false;
+      baseT = -stepPx() * index;
+      clearInterval(autoTimer);
+      track.style.transition = "none";
+    };
+    const onMove = (x, y) => {
+      if (!down) return false;
+      const dx = x - sX, dy = y - sY;
+      if (!decided) {
+        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return false;
+        decided = true; dragging = Math.abs(dx) > Math.abs(dy);
+        if (!dragging) { down = false; track.style.transition = ""; startAuto(); return false; }
+      }
+      if (dragging) { track.style.transform = `translateX(${baseT + dx}px)`; return true; }
+      return false;
+    };
+    const onUp = (x) => {
       if (!down) return;
       down = false;
-      if (Math.abs(moved) > 50) { moved < 0 ? next() : prev(); }
+      track.style.transition = "";
+      if (dragging) {
+        const dx = x - sX;
+        if (dx < -45) next(); else if (dx > 45) prev(); else update();
+      }
+      dragging = false; decided = false;
       restartAuto();
     };
-    track.addEventListener("mousedown", (e) => { pointerDown(e.clientX); });
-    window.addEventListener("mousemove", (e) => pointerMove(e.clientX));
-    window.addEventListener("mouseup", pointerUp);
-    track.addEventListener("touchstart", (e) => pointerDown(e.touches[0].clientX), { passive: true });
-    track.addEventListener("touchmove", (e) => pointerMove(e.touches[0].clientX), { passive: true });
-    track.addEventListener("touchend", pointerUp);
+    track.addEventListener("mousedown", (e) => onDown(e.clientX, e.clientY));
+    window.addEventListener("mousemove", (e) => onMove(e.clientX, e.clientY));
+    window.addEventListener("mouseup", (e) => onUp(e.clientX));
+    track.addEventListener("touchstart", (e) => onDown(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    track.addEventListener("touchmove", (e) => { if (onMove(e.touches[0].clientX, e.touches[0].clientY) && e.cancelable) e.preventDefault(); }, { passive: false });
+    track.addEventListener("touchend", (e) => onUp((e.changedTouches[0] || { clientX: sX }).clientX));
 
     let rt;
     window.addEventListener("resize", () => {
@@ -304,8 +329,8 @@
           { duration: 1100, easing: "ease-out" }
         );
       }
-      const target = document.getElementById("quote");
-      if (target) target.scrollIntoView({ behavior: "smooth" });
+      const target = document.getElementById("request-quote") || document.getElementById("quote");
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 
@@ -321,44 +346,26 @@
     });
   }
 
-  /* ---------- form submit ----------
-     Each quote request is POSTed to a Google Apps Script web app that logs it
-     to a Google Sheet AND emails a notification. Paste the deployment URL
-     below. Until it's set, the form still confirms to the customer. */
-  const LEADS_ENDPOINT = ""; // <-- paste Google Apps Script Web App URL here
+  /* ---------- form submit (client-side only) ---------- */
   const form = document.getElementById("quote-form");
   if (form) {
-    const wrap = document.querySelector(".qform");
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    const showSuccess = () => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const wrap = document.querySelector(".qform");
       const nameVal = (form.querySelector('[name="name"]').value || "there").split(" ")[0];
       const okName = document.querySelector(".success-name");
       if (okName) okName.textContent = nameVal;
       wrap.classList.add("done");
       wrap.scrollIntoView({ behavior: "smooth", block: "center" });
-    };
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      // No endpoint configured yet: keep the friendly confirmation (nothing sent).
-      if (!LEADS_ENDPOINT) { showSuccess(); return; }
-
-      // url-encoded body keeps this a "simple" request so no-cors delivery works
-      const data = new URLSearchParams(new FormData(form));
-
-      if (submitBtn) submitBtn.disabled = true;
-      try {
-        await fetch(LEADS_ENDPOINT, { method: "POST", body: data, mode: "no-cors" });
-      } catch (err) {
-        /* swallow network errors so the customer is never left stuck */
-      } finally {
-        if (submitBtn) submitBtn.disabled = false;
-        showSuccess();
-      }
     });
   }
+
+  /* ---------- service checkboxes (class toggle for reliable :checked styling) ---------- */
+  document.querySelectorAll(".svc-check input").forEach((cb) => {
+    const sync = () => { const w = cb.closest(".svc-check"); if (w) w.classList.toggle("on", cb.checked); };
+    cb.addEventListener("change", sync);
+    sync();
+  });
 
   /* ---------- footer year ---------- */
   const yr = document.getElementById("year");

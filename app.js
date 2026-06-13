@@ -322,10 +322,10 @@
   }
 
   /* ---------- form submit ----------
-     Lead delivery via Web3Forms (no backend needed). Paste the access key
-     for hello@thescrubdoctors.com below to turn on email delivery. Until a
-     key is set, the form still confirms to the customer but won't email. */
-  const WEB3FORMS_KEY = ""; // <-- paste Web3Forms access key here
+     Each quote request is POSTed to a Google Apps Script web app that logs it
+     to a Google Sheet AND emails a notification. Paste the deployment URL
+     below. Until it's set, the form still confirms to the customer. */
+  const LEADS_ENDPOINT = ""; // <-- paste Google Apps Script Web App URL here
   const form = document.getElementById("quote-form");
   if (form) {
     const wrap = document.querySelector(".qform");
@@ -342,17 +342,15 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // No key configured yet: keep the friendly confirmation (no email sent).
-      if (!WEB3FORMS_KEY) { showSuccess(); return; }
+      // No endpoint configured yet: keep the friendly confirmation (nothing sent).
+      if (!LEADS_ENDPOINT) { showSuccess(); return; }
 
-      const data = new FormData(form);
-      data.append("access_key", WEB3FORMS_KEY);
-      data.append("subject", "New quote request from your website");
-      data.append("from_name", "The Scrub Doctors website");
+      // url-encoded body keeps this a "simple" request so no-cors delivery works
+      const data = new URLSearchParams(new FormData(form));
 
       if (submitBtn) submitBtn.disabled = true;
       try {
-        await fetch("https://api.web3forms.com/submit", { method: "POST", body: data });
+        await fetch(LEADS_ENDPOINT, { method: "POST", body: data, mode: "no-cors" });
       } catch (err) {
         /* swallow network errors so the customer is never left stuck */
       } finally {

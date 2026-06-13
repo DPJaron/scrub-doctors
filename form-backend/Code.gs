@@ -17,10 +17,26 @@
  *      ▸ "Go to ... (unsafe)" ▸ Allow — it's your own script, this is normal).
  *   5. Copy the "Web app" URL it gives you and send it to your developer.
  *      (It looks like https://script.google.com/macros/s/AKfyc.../exec)
+ *
+ * The Sheet auto-shares with scrubdoctorss@gmail.com on the first submission.
+ * To share it immediately instead, pick "shareSheet" in the toolbar function
+ * dropdown and click Run once.
  */
 
-// Lead notifications go here. Add more, comma-separated, inside the quotes.
+// Lead notifications are emailed here. Add more, comma-separated, in the quotes.
 var NOTIFY_EMAILS = "thedrplants@gmail.com";
+
+// The Sheet is automatically shared (as an editor) with this address.
+var SHARE_WITH = "scrubdoctorss@gmail.com";
+
+/**
+ * Optional: run this once from the Apps Script editor (Run ▸ shareSheet) to
+ * share the Sheet with SHARE_WITH right now. Otherwise it auto-shares on the
+ * first form submission. Safe to run repeatedly.
+ */
+function shareSheet() {
+  if (SHARE_WITH) SpreadsheetApp.getActiveSpreadsheet().addEditor(SHARE_WITH);
+}
 
 function doPost(e) {
   try {
@@ -32,6 +48,7 @@ function doPost(e) {
       sheet.appendRow(["Received", "Name", "Address", "Email", "Phone", "# Windows", "Plan", "Notes"]);
       sheet.getRange("A1:H1").setFontWeight("bold");
       sheet.setFrozenRows(1);
+      try { if (SHARE_WITH) ss.addEditor(SHARE_WITH); } catch (shareErr) {}
     }
 
     var when = new Date();
